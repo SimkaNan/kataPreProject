@@ -66,6 +66,4 @@ func sendMessage(conn net.Conn) {
 			return
 		}
 	}
-
-	fmt.Println("хуйня закончена")
 }
