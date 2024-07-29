@@ -4,51 +4,68 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
-	"strings"
+	"strconv"
 )
 
-func handleConnection(conn net.Conn, file *os.File) {
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
-	for {
-		request, err := http.ReadRequest(reader)
+	request, err := http.ReadRequest(reader)
+	if err != nil {
+		fmt.Println("Error reading request:", err)
+		return
+	}
+
+	if request.Method == http.MethodGet && request.URL.Path == "/" {
+		file := openHtml()
+
+		fmt.Println(request.URL.Path)
+
+		body, err := io.ReadAll(file)
 		if err != nil {
-			fmt.Println("Error reading request:", err)
-			break
+			fmt.Println(err)
+		}
+		file.Close()
+
+		cntLngth := strconv.Itoa(len(string(body)))
+		status := "HTTP/1.1 200 OK\nContent-Length: " + cntLngth + "\n"
+		resp := []byte(status)
+		resp = append(resp, body...)
+
+		_, err = conn.Write(resp)
+		if err != nil {
+			fmt.Println(err)
 		}
 
-		if request.Method != http.MethodGet {
-			response := http.Response{
-				StatusCode: 404,
-				Body:       io.NopCloser(strings.NewReader("not found")),
-			}
-
-			err = response.Write(conn)
-			if err != nil {
-				fmt.Println("Error writing response:", err)
-				break
-			}
-		}
-
+		log.Println("GET-запрос успешно обработан")
+	} else {
 		response := http.Response{
-			StatusCode: 200,
+			StatusCode: 404,
 			ProtoMajor: 1,
 			ProtoMinor: 1,
-			Body:       file,
-			Header:     make(http.Header),
 		}
-		response.Header.Set("Content-Type", "text/plain")
 
 		err = response.Write(conn)
 		if err != nil {
 			fmt.Println("Error writing response:", err)
-			break
+			return
 		}
+
 	}
+}
+
+func openHtml() *os.File {
+	file, err := os.Open("get.html")
+	if err != nil {
+		fmt.Println("Невозможно прочитать файл:", err)
+	}
+
+	return file
 }
 
 // func handleConnection(conn net.Conn) {
@@ -70,13 +87,8 @@ func main() {
 	listener, _ := net.Listen("tcp", ":8080")
 	defer listener.Close()
 
-	file, err := os.Open("get.html")
-	if err != nil {
-		fmt.Println("Невозможно прочитать файл:", err)
-	}
-
 	for {
 		conn, _ := listener.Accept()
-		go handleConnection(conn, file)
+		go handleConnection(conn)
 	}
 }
