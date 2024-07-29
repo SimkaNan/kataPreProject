@@ -68,21 +68,6 @@ func openHtml() *os.File {
 	return file
 }
 
-// func handleConnection(conn net.Conn) {
-// 	defer conn.Close()
-// 	buf := make([]byte, 1024)
-// 	for {
-// 		n, err := conn.Read(buf)
-// 		if err == io.EOF {
-// 			return
-// 		} else if err != nil {
-// 			fmt.Println(err)
-// 			continue
-// 		}
-// 		fmt.Println(string(buf[:n]))
-// 	}
-// }
-
 func main() {
 	listener, _ := net.Listen("tcp", ":8080")
 	defer listener.Close()
