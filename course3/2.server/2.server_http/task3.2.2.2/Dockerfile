@@ -1,5 +1,9 @@
-FROM: golang:1.19-alpine3.18
+FROM golang:1.21.1-alpine
+
+WORKDIR /usr/local/src
 
 COPY ./ ./
-RUN go mod download && go build -o main .
+
+RUN go mod init go-app && go get github.com/joho/godotenv
+RUN go build -o main .
 CMD ["./main"]
